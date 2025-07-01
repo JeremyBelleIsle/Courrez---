@@ -34,6 +34,7 @@ function love.load()
     TimerAutoClick = 2
     BuySoustraction = 1
     HouseLevel = 0
+    HitStrong = 1
 end
 
 function DrawHouse(x, y, text)
@@ -97,8 +98,8 @@ function love.update(dt)
         if StickAngle >= 2 * math.pi then
             StickAngle = 0
             StickSwinging = false
-            if XofMap <= -1153 and YofMap <= -1362 and YofMap >= -1778 and XofMap >= -1361 then
-                Money = Money + 1
+            if XofMap <= -1153 + 80 and YofMap <= -1362 + 80 and YofMap >= -1778 - 80 and XofMap >= -1361 - 80 then
+                Money = Money + HitStrong
             end
         end
     end
@@ -119,53 +120,53 @@ function love.update(dt)
     local House4Y = 1310 + YofMap
     local House5X = 1410 + XofMap
     local House5Y = 1310 + YofMap
-    if Within(BreakerX, BreakerY, Triangle.x, Triangle.y, BreakerWidth, BreakerHeight) and BreakerButton then
+    if Within(BreakerX, BreakerY, Triangle.x, Triangle.y, BreakerWidth, BreakerHeight) and BreakerButton and Money >= 30 then
         AutoClick = AutoClick + 1
         Money = Money - 30
         BreakerButton = false
     end
-    if Within(House1X, House1Y, Triangle.x, Triangle.y, House1Width, House1Height) and HouseLevel == 0 and Money >= 0 then --pas 0:50
+    if Within(House1X, House1Y, Triangle.x, Triangle.y, House1Width, House1Height) and HouseLevel == 0 and Money >= 50 then
         HouseLevel = 1
         Money = Money - 50
     end
-    if WithinCircle(House2X, House2Y, 50, Triangle.x, Triangle.y) and HouseLevel == 1 and Money >= -10000 then --pas 0:100
+    if WithinCircle(House2X, House2Y, 50, Triangle.x, Triangle.y) and HouseLevel == 1 and Money >= 100 then
         HouseLevel = 2
         Money = Money - 100
     end
-    if WithinCircle(House3X, House3Y, 50, Triangle.x, Triangle.y) and HouseLevel == 2 and Money >= -10000 then --pas 0:200
+    if WithinCircle(House3X, House3Y, 50, Triangle.x, Triangle.y) and HouseLevel == 2 and Money >= 200 then
         HouseLevel = 3
         Money = Money - 200
     end
-    if WithinCircle(House4X, House4Y, 50, Triangle.x, Triangle.y) and HouseLevel == 3 and Money >= -10000 then --pas 0:500
+    if WithinCircle(House4X, House4Y, 50, Triangle.x, Triangle.y) and HouseLevel == 3 and Money >= 500 then
         HouseLevel = 4
         Money = Money - 500
     end
-    if WithinCircle(House5X, House5Y, 50, Triangle.x, Triangle.y) and HouseLevel == 4 and Money >= -10000 then --pas 0:1000
+    if WithinCircle(House5X, House5Y, 50, Triangle.x, Triangle.y) and HouseLevel == 4 and Money >= 1000 then
         HouseLevel = 5
         Money = Money - 1000
     end
     if CurrentScreen == "Island" then
         if YofMap < 0 then
             if love.keyboard.isDown("up") then
-                YofMap = YofMap + Speed * Zoom / Speed
+                YofMap = YofMap + Speed * Zoom / 20
                 Triangle.angle = -math.pi / 2
             end
         end
         if YofMap > -2025 then
             if love.keyboard.isDown("down") then
-                YofMap = YofMap - Speed * Zoom / Speed
+                YofMap = YofMap - Speed * Zoom / 20
                 Triangle.angle = math.pi / 2
             end
         end
         if XofMap > -1426 then
             if love.keyboard.isDown("right") then
-                XofMap = XofMap - Speed * Zoom / Speed
+                XofMap = XofMap - Speed * Zoom / 20
                 Triangle.angle = 0
             end
         end
         if XofMap < 0 then
             if love.keyboard.isDown("left") then
-                XofMap = XofMap + Speed * Zoom / Speed
+                XofMap = XofMap + Speed * Zoom / 20
                 Triangle.angle = math.pi
             end
         end
@@ -182,8 +183,6 @@ function love.update(dt)
 end
 
 function love.mousepressed(x, y, button)
-    print("x:" .. x)
-    print("y:" .. y)
     if button == 1 then
         if Within(250, 100, x, y, 200, 200) and CurrentScreen == "Armerie" then
             Weapon = "Wood"
@@ -193,9 +192,22 @@ function love.mousepressed(x, y, button)
                 Money = Money - 20
                 BuySoustraction = 2
             end
-        elseif Within(200, 500, x, y, 600, 300) and CurrentScreen == "Armerie" then
+        elseif Within(40, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 25 then
+            Speed = Speed + 5
+            Money = Money - 25
+        elseif Within(490, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 50 then
+            AutoClick = AutoClick + 1
+            Money = Money - 50
+        elseif Within(940, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 75 then
+            HitStrong = HitStrong + 2
+            Money = Money - 50
+        elseif Within(200, 500, x, y, 600, 300) and CurrentScreen == "Armerie" or CurrentScreen == "Upgrades" then
+            if CurrentScreen == "Armerie" then
+                YofMap = -335
+            elseif CurrentScreen == "Upgrades" then
+                YofMap = -650
+            end
             CurrentScreen = "Island"
-            YofMap = -335
             Triangle.angle = math.pi / 2
         end
     end
@@ -305,6 +317,7 @@ function love.draw()
         end
 
         DrawHouse(1300, 400, "Weapons")
+        DrawHouse(1300, 700, "Upgrades")
 
         local x1 = Triangle.x - 15
         local y1 = Triangle.y - 15
@@ -315,6 +328,10 @@ function love.draw()
         local y2 = 505 + YofMap
         local w2 = 48
         local h2 = 97
+        local x22 = 1465 + XofMap
+        local y22 = 805 + YofMap
+        local w22 = 48
+        local h22 = 97
 
         local xHouse1 = Triangle.x - 15
         local yHouse1 = Triangle.y - 15
@@ -329,9 +346,9 @@ function love.draw()
             love.graphics.setBackgroundColor(1, 1, 1)
             CurrentScreen = "Armerie"
         end
-        if WithinRectRect(xHouse1, yHouse1, wHouse1, hHouse1, xHouse2, yHouse2, wHouse2, hHouse2) then
+        if WithinRectRect(x1, y1, w1, h1, x22, y22, w22, h22) then
             love.graphics.setBackgroundColor(1, 1, 1)
-            CurrentScreen = "House"
+            CurrentScreen = "Upgrades"
         end
         DrawRock()
     elseif CurrentScreen == "Armerie" then
@@ -342,6 +359,24 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         love.graphics.draw(WoodStick, 110, 75, 0, 0.5, 0.25)
         love.graphics.draw(Pioche, 475, 125, 0, 0.25, 0.16)
+        love.graphics.setColor(1, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 200, 500, 600, 300)
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.setFont(love.graphics.newFont(200))
+        love.graphics.print("Close", 210, 520)
+    elseif CurrentScreen == "Upgrades" then
+        Upgrades = {
+            "Speed",
+            "Breaker",
+            "Strong"
+        }
+        for i = 1, #Upgrades, 1 do
+            love.graphics.setColor(0, 0, 0)
+            love.graphics.rectangle("fill", 450 * i - 410, 250, 425, 200)
+            love.graphics.setFont(love.graphics.newFont(80))
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print(Upgrades[i] .. 25 * i .. "$", 450 * i - 410 + 10, 250 + 20)
+        end
         love.graphics.setColor(1, 0, 0, 0.7)
         love.graphics.rectangle("fill", 200, 500, 600, 300)
         love.graphics.setColor(1, 0, 0)
