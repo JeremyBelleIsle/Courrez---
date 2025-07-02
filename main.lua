@@ -15,8 +15,8 @@ function love.load()
     House1 = love.graphics.newImage("House 1.png")
     House2 = love.graphics.newImage("House 2.png")
     House3 = love.graphics.newImage("House 3.png")
-    House4 = love.graphics.newImage("House 4.png")
-    House5 = love.graphics.newImage("House 5.png")
+    House4 = love.graphics.newImage("House 5.png")
+    House5 = love.graphics.newImage("House 4.png")
     Triangle = {}
     Triangle.x = 400
     Triangle.y = 300
@@ -35,6 +35,12 @@ function love.load()
     BuySoustraction = 1
     HouseLevel = 0
     HitStrong = 1
+    NightorDay = true
+    TimerNightorDay = 600 --5 minutes
+    LightLevel = 1        -- commence à plein jour
+    LightDirection = -1   -- va vers la nuit
+    LightSpeed = 0.01     -- vitesse du cycle
+    ClockTime = 12        -- 12h au début (midi)
 end
 
 function DrawHouse(x, y, text)
@@ -80,6 +86,20 @@ end
 
 function love.update(dt)
     if CurrentScreen == "Island" then
+        -- Cycle jour/nuit automatique
+        LightLevel = LightLevel + LightDirection * LightSpeed * dt
+        if LightLevel <= 0.2 then -- nuit noire minimale
+            LightLevel = 0.2
+            LightDirection = 1    -- repart vers le jour
+        elseif LightLevel >= 1 then
+            LightLevel = 1
+            LightDirection = -1 -- repart vers la nuit
+        end
+        -- Avance l'heure en fonction du LightSpeed
+        ClockTime = ClockTime + (LightSpeed * 12 * dt)
+        if ClockTime >= 24 then
+            ClockTime = ClockTime - 24
+        end
         TimerAutoClick = TimerAutoClick - dt
         if TimerAutoClick <= 0 then
             TimerAutoClick = 2
@@ -386,6 +406,17 @@ function love.draw()
     love.graphics.setColor(0, 1, 0)
     love.graphics.setFont(love.graphics.newFont(125))
     love.graphics.print("Money:" .. Money)
+    -- Effet d'ombre sur toute la map
+    local hours = math.floor(ClockTime)
+    local minutes = math.floor((ClockTime - hours) * 60)
+    local timeText = string.format("%02d:%02d", hours, minutes)
+
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.setFont(love.graphics.newFont(30))
+    love.graphics.print("Clock" .. timeText, love.graphics.getWidth() - 200, 20)
+    love.graphics.setColor(0, 0, 0, 1 - LightLevel)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    love.graphics.setColor(1, 1, 1) -- reset couleur
 end
 
 local love_errorhandler = love.errorhandler
