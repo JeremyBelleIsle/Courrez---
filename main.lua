@@ -41,6 +41,8 @@ function love.load()
     LightDirection = -1   -- va vers la nuit
     LightSpeed = 0.01     -- vitesse du cycle
     ClockTime = 12        -- 12h au début (midi)
+    MoneyHistory = {}
+    MoneyTimer = 0
 end
 
 function DrawHouse(x, y, text)
@@ -84,7 +86,23 @@ function DrawRock()
     love.graphics.draw(Rock, 1500 + XofMap, 1700 + YofMap, 0, 0.3)
 end
 
+function RecordMoneyChange(amount, label)
+    table.insert(MoneyHistory, { amount = amount, label = label })
+    if #MoneyHistory > 50 then
+        table.remove(MoneyHistory, 1)
+    end
+end
+
 function love.update(dt)
+    -- Échantillonne toutes les 0.5 secondes
+    MoneyTimer = MoneyTimer + dt
+    if MoneyTimer >= 0.5 then
+        MoneyTimer = 0
+        -- Garde seulement les 50 derniers Échantillons
+        if #MoneyHistory > 50 then
+            table.remove(MoneyHistory, 1)
+        end
+    end
     if CurrentScreen == "Island" then
         -- Cycle jour/nuit automatique
         LightLevel = LightLevel + LightDirection * LightSpeed * dt
@@ -141,6 +159,7 @@ function love.update(dt)
     local House5X = 1410 + XofMap
     local House5Y = 1310 + YofMap
     if Within(BreakerX, BreakerY, Triangle.x, Triangle.y, BreakerWidth, BreakerHeight) and BreakerButton and Money >= 30 then
+        RecordMoneyChange(-30, "AutoClick Level" .. AutoClick)
         AutoClick = AutoClick + 1
         Money = Money - 30
         BreakerButton = false
@@ -148,22 +167,27 @@ function love.update(dt)
     if Within(House1X, House1Y, Triangle.x, Triangle.y, House1Width, House1Height) and HouseLevel == 0 and Money >= 50 then
         HouseLevel = 1
         Money = Money - 50
+        RecordMoneyChange(-50, "House Level 1")
     end
     if WithinCircle(House2X, House2Y, 50, Triangle.x, Triangle.y) and HouseLevel == 1 and Money >= 100 then
         HouseLevel = 2
         Money = Money - 100
+        RecordMoneyChange(-100, "House Level 2")
     end
     if WithinCircle(House3X, House3Y, 50, Triangle.x, Triangle.y) and HouseLevel == 2 and Money >= 200 then
         HouseLevel = 3
         Money = Money - 200
+        RecordMoneyChange(-200, "House Level 3")
     end
     if WithinCircle(House4X, House4Y, 50, Triangle.x, Triangle.y) and HouseLevel == 3 and Money >= 500 then
         HouseLevel = 4
         Money = Money - 500
+        RecordMoneyChange(-500, "House Level 4")
     end
     if WithinCircle(House5X, House5Y, 50, Triangle.x, Triangle.y) and HouseLevel == 4 and Money >= 1000 then
         HouseLevel = 5
         Money = Money - 1000
+        RecordMoneyChange(-1000, "House Level 5")
     end
     if CurrentScreen == "Island" then
         if YofMap < 0 then
@@ -210,18 +234,22 @@ function love.mousepressed(x, y, button)
             Weapon = "Pioche"
             if BuySoustraction < 2 then
                 Money = Money - 20
+                RecordMoneyChange(-20, "Buy Pioche")
                 BuySoustraction = 2
             end
         elseif Within(40, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 25 then
             Speed = Speed + 5
             Money = Money - 25
+            RecordMoneyChange(-25, "Speed Level" .. Speed - 24)
         elseif Within(490, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 50 then
             AutoClick = AutoClick + 1
+            RecordMoneyChange(-50, "AutoClick Level" .. AutoClick)
             Money = Money - 50
         elseif Within(940, 250, x, y, 425, 200) and CurrentScreen == "Upgrades" and Money >= 75 then
             HitStrong = HitStrong + 2
-            Money = Money - 50
-        elseif Within(200, 500, x, y, 600, 300) and CurrentScreen == "Armerie" or CurrentScreen == "Upgrades" then
+            Money = Money - 75
+            RecordMoneyChange(-75, "Strong Level" .. HitStrong)
+        elseif Within(200, 500, x, y, 600, 300) and CurrentScreen ~= "Island" and CurrentScreen ~= "Stats" then
             if CurrentScreen == "Armerie" then
                 YofMap = -335
             elseif CurrentScreen == "Upgrades" then
@@ -229,6 +257,10 @@ function love.mousepressed(x, y, button)
             end
             CurrentScreen = "Island"
             Triangle.angle = math.pi / 2
+        elseif Within(200, 650, x, y, 600, 150) and CurrentScreen == "Stats" then
+            CurrentScreen = "Island"
+        elseif Within(1200, 600, x, y, 200, 100) and CurrentScreen == "Island" then
+            CurrentScreen = "Stats"
         end
     end
 end
@@ -371,6 +403,10 @@ function love.draw()
             CurrentScreen = "Upgrades"
         end
         DrawRock()
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.rectangle("fill", 1200, 600, 200, 100)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print("Stats", 1210, 610)
     elseif CurrentScreen == "Armerie" then
         for i = 1, 6, 1 do
             love.graphics.setColor(0, 0, 0)
@@ -402,10 +438,29 @@ function love.draw()
         love.graphics.setColor(1, 0, 0)
         love.graphics.setFont(love.graphics.newFont(200))
         love.graphics.print("Close", 210, 520)
+    elseif CurrentScreen == "Stats" then
+        love.graphics.setBackgroundColor(1, 1, 1)
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.setFont(love.graphics.newFont(200))
+        love.graphics.print("Expense", 300, -10)
+        for i = 1, #MoneyHistory do
+            love.graphics.setColor(0, 1, 0)
+            love.graphics.setFont(love.graphics.newFont(30))
+            local entry = MoneyHistory[i]
+            local text = entry.label .. ": " .. entry.amount .. "$"
+            love.graphics.print(text, 100, 40 * i + 300)
+        end
+        love.graphics.setColor(1, 0, 0, 0.7)
+        love.graphics.rectangle("fill", 200, 650, 600, 150)
+        love.graphics.setColor(1, 0, 0)
+        love.graphics.setFont(love.graphics.newFont(150))
+        love.graphics.print("Close", 210, 665)
     end
-    love.graphics.setColor(0, 1, 0)
-    love.graphics.setFont(love.graphics.newFont(125))
-    love.graphics.print("Money:" .. Money)
+    if CurrentScreen ~= "Stats" then
+        love.graphics.setColor(0, 1, 0)
+        love.graphics.setFont(love.graphics.newFont(125))
+        love.graphics.print("Money:" .. Money)
+    end
     -- Effet d'ombre sur toute la map
     local hours = math.floor(ClockTime)
     local minutes = math.floor((ClockTime - hours) * 60)
